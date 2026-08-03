@@ -1,3 +1,5 @@
+using TmsApi.Services;
+
 public class EnrollmentWorker
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -19,7 +21,7 @@ public class EnrollmentWorker
         
         // TODO4: Use the service, then let the 'using' block dispose the scope
         _logger.LogInformation("Processing enrollment batch...");
-        var enrollments = enrollmentService.GetAllAsync().GetAwaiter().GetResult();
+        var enrollments = enrollmentService.GetAllAsync(CancellationToken.None).GetAwaiter().GetResult();
         _logger.LogInformation("Found {Count} enrollments", enrollments.Count);
         
         // Scope is disposed automatically at the end of the using block

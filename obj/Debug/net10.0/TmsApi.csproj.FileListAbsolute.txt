@@ -121,3 +121,4 @@ C:\Users\Nati\TmsApi\bin\Debug\net10.0\TmsApi.runtimeconfig.json
 C:\Users\Nati\TmsApi\bin\Debug\net10.0\TmsApi.pdb
 C:\Users\Nati\TmsApi\obj\Debug\net10.0\TmsApi.genruntimeconfig.cache
 C:\Users\Nati\TmsApi\obj\Debug\net10.0\ref\TmsApi.dll
+C:\Users\Nati\TmsApi\obj\Debug\net10.0\TmsApi.sourcelink.json

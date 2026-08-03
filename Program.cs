@@ -1,147 +1,3 @@
-
-
-// var builder = WebApplication.CreateBuilder(args);
-
-// // ============================================
-// // SERVICES REGISTRATION
-// // ============================================
-
-// // Authentication & Authorization
-// builder.Services.AddAuthentication("Training")
-//     .AddScheme<AuthenticationSchemeOptions, TrainingAuthHandler>("Training", options => { });
-
-// builder.Services.AddAuthorization();
-
-// // Controllers
-// builder.Services.AddControllers();
-
-// // Exception handling with ProblemDetails
-// builder.Services.AddProblemDetails();
-
-// // OpenAPI for Scalar
-// builder.Services.AddOpenApi();
-
-// // ============================================
-// // EXERCISE 2: DI Lifetimes (Captive Dependencies)
-// // ============================================
-
-// // Enable validation to catch captive dependencies
-// builder.Host.UseDefaultServiceProvider(options =>
-// {
-//     options.ValidateScopes = true;
-//     options.ValidateOnBuild = true;
-// });
-
-// // Register services
-// builder.Services.AddSingleton<EnrollmentWorker>();
-// builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
-
-// // ============================================
-// // EXERCISE 3: Options Pattern with Validation
-// // ============================================
-
-// builder.Services.AddOptions<PaymentOptions>()
-//     .BindConfiguration("Payments")
-//     .ValidateDataAnnotations()
-//     .ValidateOnStart();
-
-// // ============================================
-// // BUILD THE APPLICATION
-// // ============================================
-
-// var app = builder.Build();
-
-// // ============================================
-// // MIDDLEWARE PIPELINE
-// // ============================================
-
-// app.UseMiddleware<RequestLoggingMiddleware>();
-
-// // Exception Handler - should be early
-// app.UseExceptionHandler();
-
-// // Status Code Pages - optional but recommended with ProblemDetails
-// app.UseStatusCodePages();
-
-// app.UseHttpsRedirection();
-// app.UseRouting();
-// app.UseAuthentication();
-// app.UseAuthorization();
-
-// // ============================================
-// // ENDPOINTS
-// // ============================================
-
-// // ============================================
-// // EXERCISE 7: Environment Toggle (Dev vs Prod)
-// // ============================================
-
-// // Only expose OpenAPI and Scalar in Development
-// if (app.Environment.IsDevelopment())
-// {
-//     app.MapOpenApi();
-//     app.MapScalarApiReference();
-// }
-
-// // ============================================
-// // EXERCISE 1: Protected Endpoint (from Session 1)
-// // ============================================
-
-// app.MapGet("/api/assessments/results", () =>
-// {
-//     return Results.Ok(new
-//     {
-//         courseCode = "CS-101",
-//         studentId = "S-001",
-//         letterGrade = "A"
-//     });
-// }).RequireAuthorization();
-
-// // ============================================
-// // EXERCISE 2: Worker Smoke Test
-// // ============================================
-
-// app.MapGet("/api/enrollments/worker-smoke", (EnrollmentWorker worker) =>
-// {
-//     worker.ProcessBatch();
-//     return Results.Ok("processed");
-// });
-
-// // ============================================
-// // EXERCISE 3: Configuration Test
-// // ============================================
-
-// app.MapGet("/api/config/test", (IOptions<PaymentOptions> options) =>
-// {
-//     return Results.Ok(new
-//     {
-//         gatewayUrl = options.Value.GatewayUrl,
-//         maxDepositBirr = options.Value.MaxDepositBirr
-//     });
-// });
-
-// // ============================================
-// // EXERCISE 6: Error Test Route
-// // ============================================
-
-// app.MapGet("/api/error", () =>
-// {
-//     throw new TmsDatabaseException("Simulated database failure for ProblemDetails testing");
-// });
-
-// // ============================================
-// // Map Controllers (MUST be after all endpoints)
-// // ============================================
-
-// app.MapControllers();
-
-// app.Run();
-/////////////////////////////////////
-/// #########################################/////
-//###### the above codes are for module 4 ####### //////
-//###### the below codes are for module 5 #######//////
-////////////////////////////////////////
-/// 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -149,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using TmsApi.Data;
 using TmsApi.Entities;
+using TmsApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -194,6 +51,13 @@ builder.Services.AddDbContext<TmsDbContext>(options =>
         .EnableSensitiveDataLogging());
 
 // ============================================
+// MODULE 6: Register Services
+// ============================================
+
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+
+// ============================================
 // BUILD THE APPLICATION
 // ============================================
 
@@ -212,17 +76,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // ============================================
-// SEED TEST DATA (This is where it goes!)
+// SEED TEST DATA
 // ============================================
 
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<TmsDbContext>();
-    
-    // Apply any pending migrations
     context.Database.Migrate();
 
-    // Seed data if empty
     if (!context.Students.Any())
     {
         var students = new List<Student>
@@ -238,9 +99,9 @@ using (var scope = app.Services.CreateScope())
 
         var courses = new List<Course>
         {
-            new() { Code = "CS-101", Title = "Introduction to Computer Science", Capacity = 30 },
-            new() { Code = "CS-201", Title = "Data Structures and Algorithms", Capacity = 25 },
-            new() { Code = "MAT-101", Title = "Calculus I", Capacity = 40 }
+            new() { Code = "CS-101", Title = "Introduction to Computer Science", MaxCapacity = 30 },
+            new() { Code = "CS-201", Title = "Data Structures and Algorithms", MaxCapacity = 25 },
+            new() { Code = "MAT-101", Title = "Calculus I", MaxCapacity = 40 }
         };
         context.Courses.AddRange(courses);
         context.SaveChanges();
@@ -305,8 +166,4 @@ app.MapGet("/api/error", () =>
 // Map Controllers
 app.MapControllers();
 
-// ============================================
-// RUN THE APPLICATION
-// ============================================
-
-app.Run();  // ← This is the last line
+app.Run();
