@@ -84,4 +84,59 @@ public class CourseService : ICourseService
 
         return course.Enrollments.Count >= course.MaxCapacity;
     }
+
+    public async Task<PagedResponse<CourseResponseDto>> GetCoursesAsync(PagedRequest request, CancellationToken ct)
+    {
+        // Step 1: Start with a no-tracking IQueryable
+        var query = _context.Courses.AsNoTracking();
+
+        // Step 2: Apply search filter if provided
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim();
+            query = query.Where(c =>
+                EF.Functions.ILike(c.Title, $"%{search}%") ||
+                EF.Functions.ILike(c.Code, $"%{search}%"));
+        }
+
+        // Step 3: Count BEFORE paging (this gives the total count)
+        var totalCount = await query.CountAsync(ct);
+
+        // Step 4: Apply ordering
+        query = request.OrderBy.ToLower() switch
+        {
+            "code" => request.Descending 
+                ? query.OrderByDescending(c => c.Code) 
+                : query.OrderBy(c => c.Code),
+            "maxcapacity" => request.Descending 
+                ? query.OrderByDescending(c => c.MaxCapacity) 
+                : query.OrderBy(c => c.MaxCapacity),
+            _ => request.Descending 
+                ? query.OrderByDescending(c => c.Title) 
+                : query.OrderBy(c => c.Title)
+        };
+
+        // Step 5: Apply Skip/Take for pagination
+        var items = await query
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(c => new CourseResponseDto
+            {
+                Id = c.Id,
+                Code = c.Code,
+                Title = c.Title,
+                MaxCapacity = c.MaxCapacity,
+                EnrollmentCount = c.Enrollments.Count
+            })
+            .ToListAsync(ct);
+
+        // Step 6: Return the paged response
+        return new PagedResponse<CourseResponseDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = request.Page,
+            PageSize = request.PageSize
+        };
+    }
 }

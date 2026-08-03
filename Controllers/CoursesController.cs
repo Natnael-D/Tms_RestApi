@@ -15,6 +15,14 @@ public class CoursesController : ControllerBase
         _courseService = courseService;
     }
 
+    // GET: /api/courses (PAGINATED - NEW!)
+    [HttpGet]
+    public async Task<IActionResult> GetCourses([FromQuery] PagedRequest request, CancellationToken ct)
+    {
+        var result = await _courseService.GetCoursesAsync(request, ct);
+        return Ok(result);
+    }
+
     // GET: /api/courses/{id}
     [HttpGet("{id:int}", Name = nameof(GetCourseById))]
     public async Task<IActionResult> GetCourseById(int id, CancellationToken ct)
@@ -30,7 +38,6 @@ public class CoursesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest request, CancellationToken ct)
     {
-        // Check for duplicate course code (409 Conflict)
         if (await _courseService.CodeExistsAsync(request.Code, ct))
         {
             return Conflict(new ProblemDetails
