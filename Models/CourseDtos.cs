@@ -59,3 +59,13 @@ public class EnrollmentResponseDto
     public int StudentId { get; set; }
     public DateTime EnrolledAt { get; set; }
 }
+
+public record CourseDetailDto
+{
+    public required int Id { get; init; }
+    public required string Code { get; init; }
+    public required string Title { get; init; }
+    public required int MaxCapacity { get; init; }
+    public required int EnrollmentCount { get; init; }
+    public required IReadOnlyList<LinkDto> Links { get; init; }
+}

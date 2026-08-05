@@ -139,4 +139,20 @@ public class CourseService : ICourseService
             PageSize = request.PageSize
         };
     }
+
+    public async Task<CourseEnrollmentInfo?> GetEnrollmentInfoAsync(int id, CancellationToken ct)
+    {
+        return await _context.Courses
+            .AsNoTracking()
+            .Where(c => c.Id == id)
+            .Select(c => new CourseEnrollmentInfo
+            {
+                Id = c.Id,
+                Code = c.Code,
+                Title = c.Title,
+                MaxCapacity = c.MaxCapacity,
+                EnrollmentCount = c.Enrollments.Count
+            })
+            .FirstOrDefaultAsync(ct);
+    }
 }
